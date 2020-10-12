@@ -72,14 +72,11 @@ def monitorParams():
 cmdThread = threading.Thread(target = monitorParams)
 
 cmdThread.start()
-tc = Client(keys['key'][4], keys['key'][5])
 
-#tc = Client(keys['key'][0], keys['key'][1], tld='us') #if using binance.us
+tc = Client(keys['key'][0], keys['key'][1], tld='us')
 
 pm = PortfolioManager()
-bm = BinanceSocketManager(tc)
-
-#bm = BinanceSocketManager(tc, context = 'us')  #if using binance.us
+bm = BinanceSocketManager(tc,context = 'us')
 om = OrderManager(tc)
 
 params = {'ready': 0,
@@ -169,16 +166,11 @@ ewmaManager.register('ETHUSDT', 1000)
 ewmaManager.register('BTCUSDT', 100)
 ewmaManager.register('BTCUSDT', 500)
 ewmaManager.register('BNBUSDT', 100)
-ewmaManager.register('BNBUSDT', 10)
-
 ewmaManager.register('BNBUSDT', 1000)
 
 ewmaManager.register('BNBUSDT', 500)
 ewmaManager.register('LTCUSDT', 1)
 ewmaManager.register('BNBUSDT2', 100)
-ewmaManager.register('BNBUSDT2', 10)
-ewmaManager.register('SIGNAL', 100)
-
 # time.sleep(10000);
 
 
@@ -217,44 +209,40 @@ def updateBidAsk(res):
     vol = np.sqrt(ewmaManager.getValue('BNBUSDT2', 100) - ewmaManager.getValue('BNBUSDT', 100) ** 2)
     print('volatility: {:.2f}'.format(vol))
     print(res['lastUpdateId'])
-    print(','.join(['{:.4f}']*7).format(bid, ask, smid,
+    print('{:.2f},{:.2f},{:.2f},{:.2f},{:.2f},{:.2f},{:.2f}'.format(bid, ask, smid,
                                                                     getReturn('ETHUSDT', 100) * 100,
                                                                     getReturn('ETHUSDT', 500) * 100,
                                                                     getReturn('BNBUSDT', 100) * 100,
                                                                     getReturn('BNBUSDT', 500) * 100))
-
     signal = 100 * (0.008 * getReturn('BNBUSDT', 100) - 0.2863 * getReturn('BNBUSDT', 500) - 0.0177 * getReturn(
         'BNBUSDT', 1000)
                     - 0.3832 * getReturn('ETHUSDT', 100) + 0.9956 * getReturn('ETHUSDT',
                                                                               500) - 0.4885 * getReturn(
                 'ETHUSDT', 1000))
-    ewmaManager.updateSymbolAll('SIGNAL', signal)
-    signalEwma = signal - ewmaManager.getValue('SIGNAL',100)
+
     upperlimit = params['posUpperLimit']
+
     lowerlimit = params['posLowerLimit']
-    signalProd = signalEwma if (signalEwma * signal) > 0 else 0
-    #if signal and signalEwma have different sign, invalidate this signal
+
     midpos = 0.5 * (upperlimit + lowerlimit)
 
     mycurrentpos = pm.getPosition('BNB')
 
     mybid = bid - params['spread'] \
             - vol \
-            + params['alphaMultiplier'] * signalProd \
+            + params['alphaMultiplier'] * signal \
             - params['positionSkew'] * (mycurrentpos - midpos)\
             + params['buysellSkew']
 
     myask = ask + params['spread'] \
             + vol \
-            + params['alphaMultiplier'] * signalProd \
+            + params['alphaMultiplier'] * signal \
             - params['positionSkew'] * (mycurrentpos - midpos)\
             + params['buysellSkew']
-    msg = 'vol,{:.4f}, signal,{:.4f}, signal-ewma,{:.4f}, myask,{:.4f}, mybid,{:.4f}, mid,{:.4f}'.format(vol, signal, signalEwma, myask, mybid, smid)
-    print(msg)
-    logging.debug(msg)
+    print('vol:{:.2f}, signal:{:.2f}, myask:{:.2f}, mybid:{:.2f}, mid:{:.2f}'.format(vol, signal, myask, mybid, smid))
     return mybid, myask
 
-LOG_FILENAME = 'example.log'
+LOG_FILENAME = 'example.log.us'
 logging.basicConfig(
     filename=LOG_FILENAME,
     format='%(asctime)s %(levelname)-8s %(message)s',
@@ -283,7 +271,6 @@ try:
 
         #  print(res.keys())
         if 'p' in res.keys():
- #           print("trade",res['s'])
             lastTradeManager.update(res['s'], float(res['p']))
         else:
             try:
