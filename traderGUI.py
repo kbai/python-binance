@@ -44,7 +44,7 @@ def createLayout():
     return html.Div(page_content)
 
 
-app = dash.Dash(__name__)
+app = dash.Dash(__name__,external_stylesheets=external_stylesheets)
 
 app.layout = createLayout  # dynamic layout creation
 

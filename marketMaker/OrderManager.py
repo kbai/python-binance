@@ -3,6 +3,7 @@ from enum import Enum
 
 from binance.client import Client
 from binance.exceptions import BinanceAPIException
+import logging
 
 class Action(Enum):
     NOACTION = 0
@@ -26,14 +27,18 @@ class OrderManager:
     def processOrderUpdate(self, msg):
         thissym = msg['s']
         side = Action[msg['S']]
+        logging.debug(msg)
 
-        if msg['x'] == 'NEW':
+        if msg['X'] == 'NEW':
             self.openOrders[thissym][side][msg['i']] = msg
             self.openPos[thissym][side] += float(msg['q'])
 
-        if msg['x'] in ['FILLED', 'EXPIRED', 'CANCELED'] and msg['i'] in self.openOrders[thissym][side]:
+
+        if msg['X'] in ['FILLED', 'EXPIRED', 'CANCELED'] and msg['i'] in self.openOrders[thissym][side]:
             self.openPos[thissym][side] -= float(msg['q'])
             self.openOrders[thissym][side].pop(msg['i'])
+        logging.debug(self.openPos)
+
         return
 
     def cancelAllOrder(self, sym):
